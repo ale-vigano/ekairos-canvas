@@ -32,8 +32,6 @@ static VANILLA_EXTRACT: &[u8] = include_bytes!("../assets/VanillaExtract.ttf");
 static GELPEN_SERIF_LIGHT: &[u8] = include_bytes!("../assets/GelPenSerifLight.ttf");
 static GELPEN_SERIF_MEDIUM: &[u8] = include_bytes!("../assets/GelPenSerifMedium.ttf");
 static GELPEN_SERIF_HEAVY: &[u8] = include_bytes!("../assets/GelPenSerifHeavy.ttf");
-/// Embedded XITS Math font for LaTeX rendering
-static XITS_MATH: &[u8] = include_bytes!("../assets/rex-xits.otf");
 /// Embedded Noto Sans for UI elements
 static NOTO_SANS: &[u8] = include_bytes!("../assets/NotoSans-Regular.ttf");
 static NOTO_SANS_BOLD: &[u8] = include_bytes!("../assets/NotoSans-Bold.ttf");
@@ -1110,62 +1108,8 @@ impl VelloRenderer {
 
     /// Render a math (LaTeX) shape using ReX.
     fn render_math(&mut self, math: &drafftink_core::shapes::Math, transform: Affine) {
-        use crate::rex_backend::VelloBackend;
-        use rex::font::backend::ttf_parser::TtfMathFont;
-        use rex::layout::engine::LayoutBuilder;
-        use rex::render::Renderer as RexRenderer;
-
-        // Parse fonts
-        let Ok(math_face) = ttf_parser::Face::parse(XITS_MATH, 0) else {
-            self.render_math_error(math, transform, "Font parse error");
-            return;
-        };
-        let Ok(math_font) = TtfMathFont::new(math_face) else {
-            self.render_math_error(math, transform, "No MATH table");
-            return;
-        };
-        // Primary font (GelPen) for text glyphs - fallback to math font if unavailable
-        let primary_face = ttf_parser::Face::parse(GELPEN_REGULAR, 0).ok();
-
-        // Parse LaTeX
-        let Ok(parse_nodes) = rex::parser::parse(&math.latex) else {
-            self.render_math_error(math, transform, "Parse error");
-            return;
-        };
-
-        // Layout
-        let layout_engine = LayoutBuilder::new(&math_font)
-            .font_size(math.font_size)
-            .build();
-        let Ok(layout) = layout_engine.layout(&parse_nodes) else {
-            self.render_math_error(math, transform, "Layout error");
-            return;
-        };
-
-        // Cache size for bounds calculation
-        let size = layout.size();
-        math.set_cached_size(size.width, size.height, size.depth);
-
-        // Position: math.position is baseline origin, apply rotation around center
-        let center_x = math.position.x + size.width / 2.0;
-        let center_y = math.position.y - size.height / 2.0 - size.depth / 2.0;
-        let math_transform = transform
-            * Affine::translate((center_x, center_y))
-            * Affine::rotate(math.rotation)
-            * Affine::translate((-center_x, -center_y))
-            * Affine::translate((math.position.x, math.position.y));
-
-        // Render using our Vello backend with font fallback
-        let color: Color = math.style.stroke_color.into();
-        let mut backend = VelloBackend::new(
-            &mut self.scene,
-            &math_font,
-            primary_face.as_ref(),
-            math_transform,
-            color,
-        );
-        let renderer = RexRenderer::new();
-        renderer.render(&layout, &mut backend);
+        math.set_cached_size(math.bounds().width(), math.bounds().height(), 0.0);
+        self.render_math_error(math, transform, "Math rendering temporarily disabled");
     }
 
     /// Render error placeholder for math that couldn't be rendered.

@@ -10,8 +10,6 @@ pub mod text_editor;
 mod vello_impl;
 
 #[cfg(feature = "vello-renderer")]
-pub mod rex_backend;
-
 pub use renderer::{
     AngleSnapInfo, GridStyle, RenderContext, Renderer, RendererError, RotationInfo,
 };
